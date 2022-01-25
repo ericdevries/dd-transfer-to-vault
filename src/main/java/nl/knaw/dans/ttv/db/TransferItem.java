@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.core;
+package nl.knaw.dans.ttv.db;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +52,7 @@ public class TransferItem {
     public static final String TRANSFER_ITEM_FIND_ALL_STATUS_TARRING = "TransferItem.findAllWithStatusTarring";
 
     public enum TransferStatus {
+        COLLECTED,
         EXTRACT, MOVE, OCFL, TAR, TARRING, TARCREATED, POLL
     }
 

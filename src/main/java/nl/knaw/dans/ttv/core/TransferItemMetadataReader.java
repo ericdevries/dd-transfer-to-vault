@@ -15,13 +15,13 @@
  */
 package nl.knaw.dans.ttv.core;
 
-public class InvalidTransferItemException extends Exception {
+import java.nio.file.Path;
 
-    public InvalidTransferItemException(String msg, Throwable t) {
-        super(msg, t);
-    }
+public interface TransferItemMetadataReader {
 
-    public InvalidTransferItemException(String msg) {
-        this(msg, null);
-    }
+    FilenameAttributes getFilenameAttributes(Path path) throws InvalidTransferItemException;
+
+    FilesystemAttributes getFilesystemAttributes(Path path) throws InvalidTransferItemException;
+
+    FileContentAttributes getFileContentAttributes(Path path) throws InvalidTransferItemException;
 }

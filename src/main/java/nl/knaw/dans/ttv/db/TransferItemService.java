@@ -13,15 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.core;
+package nl.knaw.dans.ttv.db;
 
-public class InvalidTransferItemException extends Exception {
+import nl.knaw.dans.ttv.core.FileContentAttributes;
+import nl.knaw.dans.ttv.core.FilenameAttributes;
+import nl.knaw.dans.ttv.core.FilesystemAttributes;
 
-    public InvalidTransferItemException(String msg, Throwable t) {
-        super(msg, t);
-    }
+import java.nio.file.Path;
+import java.util.List;
 
-    public InvalidTransferItemException(String msg) {
-        this(msg, null);
-    }
+public interface TransferItemService {
+
+    List<TransferItem> findByDvePath(List<String> paths);
+
+    TransferItem createTransferItem(String datastationName, FilenameAttributes filenameAttributes, FilesystemAttributes filesystemAttributes, FileContentAttributes fileContentAttributes);
+
+    TransferItem moveTransferItem(TransferItem transferItem, Path newPath);
 }

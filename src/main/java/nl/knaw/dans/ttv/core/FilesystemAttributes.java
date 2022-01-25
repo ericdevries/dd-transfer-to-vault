@@ -15,13 +15,35 @@
  */
 package nl.knaw.dans.ttv.core;
 
-public class InvalidTransferItemException extends Exception {
+import java.time.LocalDateTime;
 
-    public InvalidTransferItemException(String msg, Throwable t) {
-        super(msg, t);
+public class FilesystemAttributes {
+    private LocalDateTime creationTime;
+    private String bagChecksum;
+    private long bagSize;
+
+    public LocalDateTime getCreationTime() {
+        return creationTime;
     }
 
-    public InvalidTransferItemException(String msg) {
-        this(msg, null);
+    public void setCreationTime(LocalDateTime creationTime) {
+        this.creationTime = creationTime;
     }
+
+    public String getBagChecksum() {
+        return bagChecksum;
+    }
+
+    public void setBagChecksum(String bagChecksum) {
+        this.bagChecksum = bagChecksum;
+    }
+
+    public long getBagSize() {
+        return bagSize;
+    }
+
+    public void setBagSize(long bagSize) {
+        this.bagSize = bagSize;
+    }
+
 }

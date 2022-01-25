@@ -16,7 +16,6 @@
 package nl.knaw.dans.ttv.db;
 
 import io.dropwizard.hibernate.AbstractDAO;
-import nl.knaw.dans.ttv.core.TransferItem;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

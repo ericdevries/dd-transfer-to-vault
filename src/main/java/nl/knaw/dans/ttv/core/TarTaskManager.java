@@ -22,6 +22,7 @@ import edu.wisc.library.ocfl.api.model.VersionInfo;
 import io.dropwizard.hibernate.UnitOfWork;
 import io.dropwizard.hibernate.UnitOfWorkAwareProxyFactory;
 import io.dropwizard.lifecycle.Managed;
+import nl.knaw.dans.ttv.db.TransferItem;
 import nl.knaw.dans.ttv.db.TransferItemDAO;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;

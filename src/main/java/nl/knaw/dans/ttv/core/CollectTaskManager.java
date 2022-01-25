@@ -15,12 +15,9 @@
  */
 package nl.knaw.dans.ttv.core;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dropwizard.hibernate.UnitOfWorkAwareProxyFactory;
 import io.dropwizard.lifecycle.Managed;
 import nl.knaw.dans.ttv.config.CollectConfiguration;
-import nl.knaw.dans.ttv.db.TransferItemDAO;
-import org.hibernate.SessionFactory;
+import nl.knaw.dans.ttv.db.TransferItemService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,21 +31,19 @@ public class CollectTaskManager implements Managed {
     private static final Logger log = LoggerFactory.getLogger(CollectTaskManager.class);
     private final List<CollectConfiguration.InboxEntry> inboxes;
     private final Path outbox;
-    private final SessionFactory sessionFactory;
     private final ExecutorService executorService;
-    private final ObjectMapper objectMapper;
-    private final TransferItemDAO transferItemDAO;
+    private final TransferItemService transferItemService;
+    private final TransferItemMetadataReader metadataReader;
     private List<InboxWatcher> inboxWatchers;
 
-    public CollectTaskManager(List<CollectConfiguration.InboxEntry> inboxes, String outbox, SessionFactory sessionFactory, ExecutorService executorService, ObjectMapper objectMapper,
-        TransferItemDAO transferItemDAO) {
+    public CollectTaskManager(List<CollectConfiguration.InboxEntry> inboxes, String outbox, ExecutorService executorService,
+        TransferItemService transferItemService, TransferItemMetadataReader metadataReader) {
         // TODO add Objects.requiresNonNull etc
         this.inboxes = inboxes;
         this.outbox = Path.of(outbox);
         this.executorService = executorService;
-        this.sessionFactory = sessionFactory;
-        this.objectMapper = objectMapper;
-        this.transferItemDAO = transferItemDAO;
+        this.transferItemService = transferItemService;
+        this.metadataReader = metadataReader;
     }
 
     @Override
@@ -75,10 +70,9 @@ public class CollectTaskManager implements Managed {
 
     private void onFileAdded(File file, String datastationName) {
         if (file.isFile() && file.getName().endsWith(".zip")) {
-            CollectTask transferTask = new UnitOfWorkAwareProxyFactory("UnitOfWorkProxy", sessionFactory)
-                .create(CollectTask.class,
-                    new Class[] { Path.class, Path.class, String.class, ObjectMapper.class, TransferItemDAO.class },
-                    new Object[] { file.toPath(), outbox, datastationName, objectMapper, transferItemDAO });
+            var transferTask = new CollectTask(
+                file.toPath(), outbox, datastationName, transferItemService, metadataReader
+            );
 
             executorService.execute(transferTask);
         }

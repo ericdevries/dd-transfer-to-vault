@@ -26,8 +26,11 @@ import nl.knaw.dans.ttv.core.CollectTaskManager;
 import nl.knaw.dans.ttv.core.ConfirmArchiveTaskManager;
 import nl.knaw.dans.ttv.core.OcflRepositoryFactory;
 import nl.knaw.dans.ttv.core.TarTaskManager;
-import nl.knaw.dans.ttv.core.TransferItem;
+import nl.knaw.dans.ttv.core.TransferItemMetadataReader;
+import nl.knaw.dans.ttv.core.TransferItemMetadataReaderImpl;
+import nl.knaw.dans.ttv.db.TransferItem;
 import nl.knaw.dans.ttv.db.TransferItemDAO;
+import nl.knaw.dans.ttv.db.TransferItemServiceImpl;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,9 +69,19 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
         final var collectExecutorService = configuration.getCollect().getTaskQueue().build(environment);
         final var createOcflExecutorService = configuration.getCreateOcfl().getTaskQueue().build(environment);
 
+        var transferItemService = new UnitOfWorkAwareProxyFactory(hibernateBundle).create(
+            TransferItemServiceImpl.class, TransferItemDAO.class, transferItemDAO);
+
+        var metadataReader = new TransferItemMetadataReaderImpl(environment.getObjectMapper());
+
         // the Collect task, which listens to new files on the network-drive shares
-        var collectTaskManager = new CollectTaskManager(configuration.getCollect().getInboxes(), configuration.getCreateTar().getInbox(), hibernateBundle.getSessionFactory(), collectExecutorService,
-            environment.getObjectMapper(), transferItemDAO);
+        var collectTaskManager = new CollectTaskManager(
+            configuration.getCollect().getInboxes(),
+            configuration.getCreateTar().getInbox(),
+            collectExecutorService,
+            transferItemService,
+            metadataReader
+        );
 
         environment.lifecycle().manage(collectTaskManager);
 
