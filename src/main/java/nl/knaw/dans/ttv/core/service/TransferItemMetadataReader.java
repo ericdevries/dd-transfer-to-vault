@@ -13,9 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.core;
+package nl.knaw.dans.ttv.core.service;
+
+import nl.knaw.dans.ttv.core.InvalidTransferItemException;
+import nl.knaw.dans.ttv.core.dto.FileContentAttributes;
+import nl.knaw.dans.ttv.core.dto.FilenameAttributes;
+import nl.knaw.dans.ttv.core.dto.FilesystemAttributes;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 public interface TransferItemMetadataReader {
 
@@ -24,4 +30,6 @@ public interface TransferItemMetadataReader {
     FilesystemAttributes getFilesystemAttributes(Path path) throws InvalidTransferItemException;
 
     FileContentAttributes getFileContentAttributes(Path path) throws InvalidTransferItemException;
+
+    Optional<Path> getAssociatedXmlFile(Path path);
 }

@@ -13,20 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.core;
+package nl.knaw.dans.ttv.core.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.codec.digest.DigestUtils;
+import nl.knaw.dans.ttv.core.InvalidTransferItemException;
+import nl.knaw.dans.ttv.core.dto.FileContentAttributes;
+import nl.knaw.dans.ttv.core.dto.FilenameAttributes;
+import nl.knaw.dans.ttv.core.dto.FilesystemAttributes;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
@@ -37,9 +41,11 @@ public class TransferItemMetadataReaderImpl implements TransferItemMetadataReade
     private static final String EXTENSION_PATTERN = "(?<extension>.zip|.xml)";
     private static final Pattern PATTERN = Pattern.compile(DOI_PATTERN + SCHEMA_PATTERN + DATASET_VERSION_PATTERN + EXTENSION_PATTERN);
     private final ObjectMapper objectMapper;
+    private final FileService fileService;
 
-    public TransferItemMetadataReaderImpl(ObjectMapper objectMapper) {
+    public TransferItemMetadataReaderImpl(ObjectMapper objectMapper, FileService fileService) {
         this.objectMapper = objectMapper;
+        this.fileService = fileService;
     }
 
     @Override
@@ -60,7 +66,6 @@ public class TransferItemMetadataReaderImpl implements TransferItemMetadataReade
             if (matcher.group("minor") != null) {
                 result.setVersionMinor(Integer.parseInt(matcher.group("minor")));
             }
-
         }
         else {
             throw new InvalidTransferItemException(String.format("filename %s does not match expected pattern", filename));
@@ -74,11 +79,12 @@ public class TransferItemMetadataReaderImpl implements TransferItemMetadataReade
         var result = new FilesystemAttributes();
 
         try {
-            if (Files.getAttribute(path, "creationTime") != null) {
-                FileTime creationTime = (FileTime) Files.getAttribute(path, "creationTime");
-                result.setCreationTime(LocalDateTime.ofInstant(creationTime.toInstant(), ZoneId.systemDefault()));
-                result.setBagChecksum(new DigestUtils("SHA-256").digestAsHex(Files.readAllBytes(path)));
-                result.setBagSize(Files.size(path));
+            var creationTime = fileService.getFilesystemAttribute(path, "creationTime");
+
+            if (creationTime != null) {
+                result.setCreationTime(LocalDateTime.ofInstant(((FileTime)creationTime).toInstant(), ZoneId.systemDefault()));
+                result.setBagChecksum(fileService.calculateChecksum(path));
+                result.setBagSize(fileService.getFileSize(path));
             }
         }
         catch (IOException e) {
@@ -92,6 +98,7 @@ public class TransferItemMetadataReaderImpl implements TransferItemMetadataReade
     public FileContentAttributes getFileContentAttributes(Path path) throws InvalidTransferItemException {
         var result = new FileContentAttributes();
 
+        // TODO move zip stuff to separate class
         try {
             ZipFile datasetVersionExport = new ZipFile(path.toFile());
             String metadataFilePath = Objects.requireNonNull(datasetVersionExport.stream().filter(zipEntry -> zipEntry.getName().endsWith(".jsonld")).findAny().orElse(null),
@@ -121,5 +128,17 @@ public class TransferItemMetadataReaderImpl implements TransferItemMetadataReade
         }
 
         return result;
+    }
+
+    @Override
+    public Optional<Path> getAssociatedXmlFile(Path path) {
+        Matcher matcher = PATTERN.matcher(path.getFileName().toString());
+        String xml = matcher.matches() ? matcher.group("doi") + "-datacite.v" + matcher.group("major") + "." + matcher.group("minor") + ".xml" : null;
+
+        if (xml != null) {
+            return Optional.of(path.getParent().resolve(Path.of(xml)));
+        }
+
+        return Optional.empty();
     }
 }

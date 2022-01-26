@@ -13,20 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.db;
-
-import nl.knaw.dans.ttv.core.FileContentAttributes;
-import nl.knaw.dans.ttv.core.FilenameAttributes;
-import nl.knaw.dans.ttv.core.FilesystemAttributes;
+package nl.knaw.dans.ttv.core.service;
 
 import java.nio.file.Path;
-import java.util.List;
 
-public interface TransferItemService {
+public interface InboxWatcherFactory {
 
-    List<TransferItem> findByDvePath(List<String> paths);
+    InboxWatcher getInboxWatcher(
+        Path path, String datastationName, InboxWatcher.Callback callback, long interval);
 
-    TransferItem createTransferItem(String datastationName, FilenameAttributes filenameAttributes, FilesystemAttributes filesystemAttributes, FileContentAttributes fileContentAttributes);
-
-    TransferItem moveTransferItem(TransferItem transferItem, Path newPath);
 }

@@ -13,20 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.core;
-
-import edu.wisc.library.ocfl.api.OcflRepository;
-import edu.wisc.library.ocfl.core.OcflRepositoryBuilder;
-import edu.wisc.library.ocfl.core.extension.storage.layout.config.FlatOmitPrefixLayoutConfig;
+package nl.knaw.dans.ttv.core.service;
 
 import java.nio.file.Path;
 
-public class OcflRepositoryFactory {
-    public OcflRepository createRepository(Path storageDirectory, Path workingDirectory) {
-        return new OcflRepositoryBuilder()
-            .defaultLayoutConfig(new FlatOmitPrefixLayoutConfig().setDelimiter("urn:uuid:"))
-            .storage(ocflStorageBuilder -> ocflStorageBuilder.fileSystem(storageDirectory))
-            .workDir(workingDirectory)
-            .build();
+public class InboxWatcherFactoryImpl implements InboxWatcherFactory {
+    @Override
+    public InboxWatcher getInboxWatcher(Path path, String datastationName, InboxWatcher.Callback callback, long interval) {
+        return new InboxWatcher(path, datastationName, callback, 500);
     }
 }

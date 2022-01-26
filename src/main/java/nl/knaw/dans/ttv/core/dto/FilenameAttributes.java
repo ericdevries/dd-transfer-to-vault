@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.core;
+package nl.knaw.dans.ttv.core.dto;
 
 public class FilenameAttributes {
 
@@ -52,5 +52,15 @@ public class FilenameAttributes {
 
     public void setDveFilePath(String dveFilePath) {
         this.dveFilePath = dveFilePath;
+    }
+
+    @Override
+    public String toString() {
+        return "FilenameAttributes{" +
+            "dveFilePath='" + dveFilePath + '\'' +
+            ", datasetPid='" + datasetPid + '\'' +
+            ", versionMajor=" + versionMajor +
+            ", versionMinor=" + versionMinor +
+            '}';
     }
 }

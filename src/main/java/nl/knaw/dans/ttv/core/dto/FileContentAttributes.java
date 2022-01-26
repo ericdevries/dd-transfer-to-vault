@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.core;
+package nl.knaw.dans.ttv.core.dto;
 
 public class FileContentAttributes {
 
@@ -63,4 +63,12 @@ public class FileContentAttributes {
         this.pidMapping = pidMapping;
     }
 
+    @Override
+    public String toString() {
+        return "FileContentAttributes{" +
+            "datasetVersion='" + datasetVersion + '\'' +
+            ", bagId='" + bagId + '\'' +
+            ", nbn='" + nbn + '\'' +
+            '}';
+    }
 }

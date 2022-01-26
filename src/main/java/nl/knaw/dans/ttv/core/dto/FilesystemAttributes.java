@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.ttv.core;
+package nl.knaw.dans.ttv.core.dto;
 
 import java.time.LocalDateTime;
 
@@ -46,4 +46,12 @@ public class FilesystemAttributes {
         this.bagSize = bagSize;
     }
 
+    @Override
+    public String toString() {
+        return "FilesystemAttributes{" +
+            "creationTime=" + creationTime +
+            ", bagChecksum='" + bagChecksum + '\'' +
+            ", bagSize=" + bagSize +
+            '}';
+    }
 }
