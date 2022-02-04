@@ -42,6 +42,9 @@ public class FileServiceImpl implements FileService {
     public Path moveFileAtomically(Path filePath, Path newPath) throws IOException {
         var tempTarget = Path.of(newPath.toString() + ".part");
 
+        // there could be leftovers from a previous attempt, remove them
+        Files.deleteIfExists(tempTarget);
+
         moveFile(filePath, tempTarget);
         return moveFile(tempTarget, newPath);
     }
