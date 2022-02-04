@@ -39,6 +39,14 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public Path moveFileAtomically(Path filePath, Path newPath) throws IOException {
+        var tempTarget = Path.of(newPath.toString() + ".part");
+
+        moveFile(filePath, tempTarget);
+        return moveFile(tempTarget, newPath);
+    }
+
+    @Override
     public boolean deleteFile(Path path) throws IOException {
         Objects.requireNonNull(path, "path cannot be null");
         log.trace("deleting file {}", path);

@@ -29,17 +29,15 @@ public class CollectTask implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(CollectTask.class);
 
     private final Path filePath;
-    private final Path workDir;
     private final Path outbox;
     private final String datastationName;
     private final TransferItemService transferItemService;
     private final TransferItemMetadataReader metadataReader;
     private final FileService fileService;
 
-    public CollectTask(Path filePath, Path workDir, Path outbox, String datastationName, TransferItemService transferItemService,
+    public CollectTask(Path filePath, Path outbox, String datastationName, TransferItemService transferItemService,
         TransferItemMetadataReader metadataReader, FileService fileService) {
         this.filePath = filePath;
-        this.workDir = workDir;
         this.outbox = outbox;
         this.datastationName = datastationName;
         this.transferItemService = transferItemService;
@@ -50,44 +48,40 @@ public class CollectTask implements Runnable {
     @Override
     public void run() {
         try {
-            var workDirFile = moveFileToWorkDir(this.filePath, this.workDir);
-            var transferItem = createTransferItem(workDirFile);
-            moveFileToOutbox(transferItem, workDirFile, this.outbox);
-            cleanUpXmlFile(this.filePath);
+            // TODO put the validation step in here to see if it is a valid zip file
+            processFile(this.filePath);
         }
         catch (IOException | InvalidTransferItemException e) {
-            log.error("unable to create TransferItem for path {}", this.filePath, e);
+            log.error("unable to create TransferItem for path '{}'", this.filePath, e);
+            // TODO move to deadletter box
         }
     }
 
-    private Path moveFileToWorkDir(Path filePath, Path workDir) throws IOException {
-        var target = workDir.resolve(filePath.getFileName());
-        log.debug("moving file '{}' to '{}'", filePath, target);
-        return fileService.moveFile(filePath, target);
+    void processFile(Path path) throws IOException, InvalidTransferItemException {
+        var transferItem = createOrGetTransferItem(path);
+
+        if (transferItem.getTransferStatus() != TransferItem.TransferStatus.CREATED) {
+            throw new InvalidTransferItemException(
+                String.format("TransferItem exists already, but does not have expected status of CREATED: %s", transferItem));
+        }
+
+        moveFileToOutbox(transferItem, path, this.outbox);
+        cleanUpXmlFile(this.filePath);
     }
 
-    public TransferItem createTransferItem(Path path) throws InvalidTransferItemException {
+    public TransferItem createOrGetTransferItem(Path path) throws InvalidTransferItemException {
         var filenameAttributes = metadataReader.getFilenameAttributes(path);
         log.trace("received filename attributes: {}", filenameAttributes);
-        var filesystemAttributes = metadataReader.getFilesystemAttributes(path);
-        log.trace("received filesystem attributes: {}", filesystemAttributes);
-        var fileContentAttributes = metadataReader.getFileContentAttributes(path);
-        log.trace("received file content attributes: {}", fileContentAttributes);
 
-        return transferItemService.createTransferItem(datastationName,
-            filenameAttributes, filesystemAttributes, fileContentAttributes);
-    }
+        var transferItem = transferItemService.getTransferItemByFilenameAttributes(filenameAttributes);
+        log.trace("TransferItem from database: {}", transferItem);
 
-    public void cleanUpXmlFile(Path path) throws IOException {
-        metadataReader.getAssociatedXmlFile(path)
-            .ifPresent(p -> {
-                try {
-                    fileService.deleteFile(p);
-                }
-                catch (IOException e) {
-                    log.error("unable to delete XML file associated with file {}", path, e);
-                }
-            });
+        if (transferItem.isPresent()) {
+            return transferItem.get();
+        }
+
+        log.debug("no existing TransferItem found, creating new one with attributes {}", filenameAttributes);
+        return transferItemService.createTransferItem(datastationName, filenameAttributes);
     }
 
     public void moveFileToOutbox(TransferItem transferItem, Path filePath, Path outboxPath) throws IOException {
@@ -95,9 +89,21 @@ public class CollectTask implements Runnable {
         var newPath = outboxPath.resolve(filePath.getFileName());
 
         log.trace("updating database state for item {} with new path '{}'", transferItem, newPath);
-        transferItemService.moveTransferItem(transferItem, TransferItem.TransferStatus.COLLECTED, newPath);
+        transferItemService.moveTransferItem(transferItem, TransferItem.TransferStatus.CREATED, newPath);
 
-        log.info("moving file {} to location {}", filePath, newPath);
-        fileService.moveFile(filePath, newPath);
+        log.info("moving file '{}' to location '{}'", filePath, newPath);
+        fileService.moveFileAtomically(filePath, newPath);
+    }
+
+    public void cleanUpXmlFile(Path path) {
+        metadataReader.getAssociatedXmlFile(path)
+            .ifPresent(p -> {
+                try {
+                    fileService.deleteFile(p);
+                }
+                catch (IOException e) {
+                    log.error("unable to delete XML file associated with file '{}' (filename: '{}')", path, p, e);
+                }
+            });
     }
 }
